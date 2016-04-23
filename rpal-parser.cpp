@@ -1256,8 +1256,10 @@ string Term::toString() {
             for(int i=0; i<vars; i++)
                 varstr += boundedvars->at(i) + " ";
             return "<lambda " + to_string(lam_k) + " " + varstr + ">";
-        }else if(this->type.compare("tau")==0){
+        }else if(this->type.compare("tau")==0) {
             return "<tau " + to_string(tau_children) + ">";
+        }else if(this->type.compare("tauchild")==0){
+            return "<tauchild " + to_string(delta_idx) + ">";
         }else if(this->type.compare("delta")==0){
             return "<delta " + to_string(delta_idx) + ">";
         } else{
@@ -1294,6 +1296,7 @@ string Delta::toString(){
 class ControlStructure{
     int d;
     int k;
+    int maxd;
 public:
     unordered_map<int, Delta*> control_structures;
     void generate(TreeNode*);
@@ -1388,6 +1391,28 @@ void ControlStructure::generateDelta(TreeNode* root, Delta* delta, queue<TreeNod
 
     }else if(root->val.compare("tau")==0){
             //TODO
+            Term* tau_n = new Term();
+            tau_n->type = "tau";
+
+            delta->terms->push_back(tau_n);
+
+            TreeNode* curr_var = root->left;
+            int childcount = 0;
+            int idx = 1;
+            while(curr_var!=NULL){
+                Term* temp = new Term();
+                temp->type = "tauchild";
+                temp->delta_idx = d + st_roots->size() + 1; //TODO check
+                st_roots->push(curr_var);
+                curr_var = curr_var->right;
+                idx++;
+                delta->terms->push_back(temp);
+                childcount++;
+            }
+
+            tau_n->tau_children = childcount;
+            return;
+
     }else{
 
         Term* term = new Term();
@@ -1640,6 +1665,37 @@ int main(int argc, char* argv[]) {
     twotwo->val = "2";
 
     xx->right = twotwo;
+     */
+
+    // TEST - tau
+    /*
+    TreeNode* tau1 = new TreeNode();
+    tau1->val = "tau";
+
+    TreeNode* one = new TreeNode();
+    one->val = "1";
+
+    tau1->left = one;
+
+    TreeNode* tau2 = new TreeNode();
+    tau2->val = "tau";
+
+    one->right = tau2;
+
+    TreeNode* two = new TreeNode();
+    two->val = "2";
+
+    tau2->right = two;
+
+    TreeNode* seven = new TreeNode();
+    seven->val = "7";
+
+    tau2->left = seven;
+
+    TreeNode* eight = new TreeNode();
+    eight->val = "8";
+
+    seven->right = eight;
      */
 
 
