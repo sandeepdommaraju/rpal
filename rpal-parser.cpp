@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <stack>
+#include <unordered_map>
+#include <queue>
 
 using namespace std;
 
@@ -1221,7 +1223,198 @@ TreeNode* Parser::standardize_REC(TreeNode *root) {
     return root;
 }
 
+class Term;
+class Delta;
 
+class Environment{
+    int id;
+    Environment* parent;
+    unordered_map<string, int> bounded_varible_map;
+};
+
+class Term{
+public:
+    string type;                // gamma, lambda, cond, tau, binary_op, unary_op
+    int tau_children;           // tau_children
+    int value;                  // for numbers
+    int lam_k;                  // k -> lambda
+    int lam_c;                  // c
+    vector<string>* boundedvars; // lambda
+    int delta_idx;              // for conditional
+
+    string toString();
+};
+
+string Term::toString() {
+        //if(this==NULL) return NULL;
+        if(this->type.compare("lambda")==0){
+            if(boundedvars == NULL){
+                return NULL;
+            }
+            int vars = boundedvars->size();
+            string varstr = "";
+            for(int i=0; i<vars; i++)
+                varstr += boundedvars->at(i) + " ";
+            return "<lambda " + to_string(lam_k) + " " + varstr + ">";
+        }else if(this->type.compare("tau")==0){
+            return "<tau " + to_string(tau_children) + ">";
+        }else if(this->type.compare("delta")==0){
+            return "<delta " + to_string(delta_idx) + ">";
+        } else{
+            return this->type;
+        }
+}
+
+class Delta{
+public:
+    int id;
+    Environment* env;
+    vector<Term*>* terms;
+
+    Delta(){
+        terms = new vector<Term*>();
+        env = new Environment();
+    }
+
+    string toString();
+};
+
+string Delta::toString(){
+    string str = "";
+    if(this->terms==NULL) {
+        str += "Delta is NULL or no terms in Delta";
+        return str;
+    }
+    int ts = terms->size();
+    for(int i=0; i<ts; i++)
+        str += terms->at(i)->toString() + " ";
+    return str;
+}
+
+class ControlStructure{
+    int d;
+    int k;
+public:
+    unordered_map<int, Delta*> control_structures;
+    void generate(TreeNode*);
+    void generateDelta(TreeNode*, Delta*, queue<TreeNode*>*);
+    void print();
+};
+
+void ControlStructure::generate(TreeNode* root) {
+
+    if(root==NULL){
+        cout << "root is NULL cannot generate control structures" << endl;
+    }
+
+    queue<TreeNode*>* st_roots = new queue<TreeNode*>();
+    st_roots->push(root);
+
+    d = 0;
+    k = 1;
+
+    while(!st_roots->empty()){
+        TreeNode* front = st_roots->front();
+        st_roots->pop();
+        Delta* delta = new Delta();
+        generateDelta(front, delta, st_roots);
+        control_structures.insert(make_pair(d, delta));
+        d++;
+    }
+
+    cout << "DONE building control structures" << endl;
+}
+
+//pre-order traversal
+void ControlStructure::generateDelta(TreeNode* root, Delta* delta, queue<TreeNode*>* st_roots){
+
+    //process root
+    if(root->val.compare("lambda")==0){
+
+        if(root->left==NULL || root->left->right==NULL){
+            cout << "child NULL for lambda to generate control structure" << endl;
+            return;
+        }
+
+        Term* lam = new Term();
+        lam->type = "lambda";
+        lam->lam_k = k;
+        lam->boundedvars = new vector<string>();
+
+        if(root->left->val.compare(",")==0){
+            //TODO
+            TreeNode* curr_var = root->left->left;
+            while(curr_var!=NULL){
+                lam->boundedvars->push_back(curr_var->val);
+                curr_var = curr_var->right;
+            }
+        }else{
+            lam->boundedvars->push_back(root->left->val);
+        }
+
+        delta->terms->push_back(lam);
+        k++;
+        st_roots->push(root->left->right);
+        return;
+
+    }else if(root->val.compare("->")==0){
+            //TODO
+        Delta* del_then = new Delta();
+        Delta* del_else = new Delta();
+        Delta* beta = new Delta();
+
+        Term* del_then_term = new Term();
+        del_then_term->type = "delta";
+        del_then_term->delta_idx = d+1;
+        st_roots->push(root->left->right);
+        //generateDelta(root->left->right, del_then, st_roots);
+
+        Term* del_else_term = new Term();
+        del_else_term->type = "delta";
+        del_else_term->delta_idx = d+2;
+        st_roots->push(root->left->right->right);
+        //generateDelta(root->left->right->right, del_else, st_roots);
+
+        Term* beta_term = new Term();
+        beta_term->type = "beta";
+
+        delta->terms->push_back(del_then_term);
+        delta->terms->push_back(del_else_term);
+        delta->terms->push_back(beta_term);
+        Term* B = new Term();
+        B->type = root->left->val;
+        delta->terms->push_back(B);
+        root = root->left;
+
+    }else if(root->val.compare("tau")==0){
+            //TODO
+    }else{
+
+        Term* term = new Term();
+        term->type = root->val;
+        delta->terms->push_back(term);
+    }
+
+    if(root->left!=NULL)
+        generateDelta(root->left, delta, st_roots);
+
+    if(root->left!=NULL && root->left->right!=NULL)
+        generateDelta(root->left->right, delta, st_roots);
+}
+
+
+void ControlStructure::print() {
+
+    for(int dd=0; dd<d; dd++){
+        Delta* delta = control_structures.at(dd);
+        if(delta == NULL){
+            cout << "NULL delta at " << dd << endl;
+            continue;
+        }
+        cout << dd << " : " << delta->toString() << endl;
+    }
+
+}
 /**
  * standardize AST ends here
  */
@@ -1261,6 +1454,200 @@ int main(int argc, char* argv[]) {
     parser.standardize_AST(parser.top());
     if(printST)
         parser.preorderTraversal(parser.top(), 0);
+
+
+    //ControlStructure controlStructure;
+    //Delta* delta = new Delta();
+    //unordered_map<int, Delta*> delta_map;
+    //delta_map.insert(std::make_pair(0, delta));
+    //controlStructure.generate(parser.top(), delta, delta_map, 0, 1);
+
+
+    /**
+     * Test control structures
+     */
+
+    //test1 -> lec 12 , slide 15
+
+    /*
+     * TEST - simple lambda, gamma
+     *
+     *
+    TreeNode* root = new TreeNode();
+    root->val = "gamma";
+
+    TreeNode* leftlam1 = new TreeNode();
+    leftlam1->val = "lambda";
+
+    TreeNode* rightgam1 = new TreeNode();
+    rightgam1->val = "gamma";
+
+    root->left = leftlam1;
+    leftlam1->right = rightgam1;
+
+    TreeNode* x2 = new TreeNode();
+    x2->val = "x";
+
+    leftlam1->left = x2;
+
+    TreeNode* leftgam2 = new TreeNode();
+    leftgam2->val = "gamma";
+    x2->right = leftgam2;
+
+    TreeNode* rightleft2 = new TreeNode();
+    rightleft2->val = "lambda";
+
+    TreeNode* rightright2 = new TreeNode();
+    rightright2->val = "7";
+
+    rightgam1->left = rightleft2;
+    rightleft2->right = rightright2;
+
+    TreeNode* znode = new TreeNode();
+    znode->val = "z";
+
+    TreeNode* zgmma = new TreeNode();
+    zgmma->val = "gamma";
+
+    rightleft2->left = znode;
+    znode->right = zgmma;
+
+    TreeNode* startgamma = new TreeNode();
+    startgamma->val = "gamma";
+
+    TreeNode* zz = new TreeNode();
+    zz->val = "z";
+
+    startgamma->right = zz;
+
+    zgmma->left = startgamma;
+
+    TreeNode* star = new TreeNode();
+    star->val = "*";
+
+    startgamma->left = star;
+
+    TreeNode* two = new TreeNode();
+    two->val = "2";
+
+    star->right = two;
+    */
+
+    /**
+     *  TEST - lambda with comma (x, y, z)
+     */
+
+    /*TreeNode* root = new TreeNode();
+    root->val = "gamma";
+
+    TreeNode* lam = new TreeNode();
+    lam->val = "lambda";
+
+    root->left = lam;
+
+    TreeNode* two = new TreeNode();
+    two->val = "2";
+
+    lam->right = two;
+
+    TreeNode* comma = new TreeNode();
+    comma->val = ",";
+
+    lam->left = comma;
+
+    TreeNode* plus = new TreeNode();
+    plus->val = "+";
+
+    comma->right = plus;
+
+    TreeNode* lamx = new TreeNode();
+    lamx->val = "x";
+
+    comma->left = lamx;
+
+    TreeNode* lamy = new TreeNode();
+    lamy->val = "y";
+
+    lamx->right = lamy;
+
+    TreeNode* lamz = new TreeNode();
+    lamz->val = "z";
+
+    lamy->right = lamz;
+
+    TreeNode* x = new TreeNode();
+    x->val = "x";
+
+    plus->left = x;
+
+    TreeNode* star = new TreeNode();
+    star->val = "*";
+
+    x->right = star;
+
+    TreeNode* y = new TreeNode();
+    y->val = "y";
+
+    star->left = y;
+
+    TreeNode* z = new TreeNode();
+    z->val = "z";
+
+    y->right = z;
+    */
+
+    //TEST cond
+    /*
+    TreeNode* cond = new TreeNode();
+    cond->val = "->";
+
+    TreeNode* gr = new TreeNode();
+    gr->val = "gr";
+
+    cond->left = gr;
+
+    TreeNode* print = new TreeNode();
+    print->val = "PRINT";
+
+    gr->right = print;
+
+    TreeNode* pplus = new TreeNode();
+    pplus->val = "+";
+
+    print->right = pplus;
+
+    TreeNode* five = new TreeNode();
+    five->val = "5";
+
+    gr->left = five;
+
+    TreeNode* seven = new TreeNode();
+    seven->val ="7";
+
+    five->right = seven;
+
+    TreeNode* me = new TreeNode();
+    me->val = "me";
+
+    print->left = me;
+
+    TreeNode* xx = new TreeNode();
+    xx->val ="x";
+
+    pplus->left =xx;
+
+    TreeNode* twotwo = new TreeNode();
+    twotwo->val = "2";
+
+    xx->right = twotwo;
+     */
+
+
+    ControlStructure* controlStructure = new ControlStructure();
+    controlStructure->generate(parser.top());
+
+    controlStructure->print();
+
 
     return 0;
 }
