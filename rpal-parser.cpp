@@ -937,7 +937,7 @@ void Parser::standardize_AST(TreeNode *root) {
         standardize_FUNCFORM(root);
     else if(root->val.compare("and")==0)
         standardize_AND(root);
-    else if(root->val.compare("at")==0)
+    else if(root->val.compare("@")==0)
         standardize_AT(root);
     else if(root->val.compare("rec")==0)
         standardize_REC(root);
@@ -1020,7 +1020,7 @@ TreeNode* Parser::standardize_WITHIN(TreeNode *root) {
         return NULL;
     }
 
-    TreeNode* x1 = root->left->left;
+    /*TreeNode* x1 = root->left->left;
     TreeNode* e1 = root->left->left->right;
     TreeNode* x2 = root->left->right->left;
     TreeNode* e2 = root->left->right->left->right;
@@ -1035,6 +1035,27 @@ TreeNode* Parser::standardize_WITHIN(TreeNode *root) {
     root->left->right->left->right = e1;
     root->left->right->left->val="lambda";
     root->left->right->left->left->right=e2;
+     */
+
+    TreeNode* leq = root->left;
+    TreeNode* req = leq->right;
+    TreeNode* X1 = leq->left;
+    TreeNode* E1 = X1->right;
+    TreeNode* X2 = req->left;
+    TreeNode* E2 = X2->right;
+
+    root->val = "=";
+    root->left = X2;
+    req->val = "gamma";
+    X2->right = req;
+
+    TreeNode* lam = new TreeNode();
+    lam->val = "lambda";
+    req->left = lam;
+    lam->right = E1;
+    lam->left = X1;
+    X1->right = E2;
+
     return root;
 
 }
@@ -1140,7 +1161,6 @@ TreeNode* Parser::standardize_AT(TreeNode *root) {
         cout << "at AST does not contain at" << endl;
         return NULL;
     }
-
     root->val = "gamma";
     TreeNode* E1 = root->left;
     TreeNode* N =  E1->right;
@@ -1182,7 +1202,7 @@ TreeNode* Parser::standardize_REC(TreeNode *root) {
     gam->val = "gamma";
 
     TreeNode* Ystar = new TreeNode();
-    Ystar->val = "Y*";
+    Ystar->val = "<Y*>";
 
     TreeNode* lam = new TreeNode();
     lam->val = "lambda";
