@@ -1227,10 +1227,23 @@ class Term;
 class Delta;
 
 class Environment{
+public:
     int id;
     Environment* parent;
     unordered_map<string, int> bounded_varible_map;
+
+    string toString();
 };
+
+string Environment::toString() {
+    string str = "";
+    str += "id: " + to_string(id) + "\n";
+    /*for(auto kv : bounded_varible_map){
+        str += (string) kv.first + " : " + to_string(kv.second);
+        str += "\n";
+    }*/
+    return str;
+}
 
 class Term{
 public:
@@ -1246,10 +1259,11 @@ public:
 };
 
 string Term::toString() {
+    string str = "";
         //if(this==NULL) return NULL;
         if(this->type.compare("lambda")==0){
             if(boundedvars == NULL){
-                return NULL;
+                return "ERROR in Term.toString()";
             }
             int vars = boundedvars->size();
             string varstr = "";
@@ -1262,20 +1276,24 @@ string Term::toString() {
             return "<tauchild " + to_string(delta_idx) + ">";
         }else if(this->type.compare("delta")==0){
             return "<delta " + to_string(delta_idx) + ">";
-        } else{
-            return this->type;
+        }else if(this->type.compare("env")==0){
+            return "<env " + to_string(value) + ">";
         }
+        else{
+            return this->type + "";
+        }
+    return str;
 }
 
 class Delta{
 public:
     int id;
-    Environment* env;
+    //Environment* env;
     vector<Term*>* terms;
 
     Delta(){
         terms = new vector<Term*>();
-        env = new Environment();
+        //env = new Environment();
     }
 
     string toString();
@@ -1325,7 +1343,7 @@ void ControlStructure::generate(TreeNode* root) {
         d++;
     }
 
-    cout << "DONE building control structures" << endl;
+    //cout << "DONE building control structures" << endl;
 }
 
 //pre-order traversal
@@ -1440,6 +1458,118 @@ void ControlStructure::print() {
     }
 
 }
+
+class CSEMachine;
+
+class CSEMachine{
+
+public:
+
+    CSEMachine(ControlStructure* cstr){
+        if(cstr==NULL || cstr->control_structures.size()==0){
+            cout << "ERR in CSEMachine contructor!! - control sturctures could be NULL" << endl;
+            return;
+        }
+        this->controlStructure = cstr;
+        this->control = new vector<Term*>();
+        this->stack1 = new stack<Term*>();
+        this->appliedRules = new vector<int>();
+        this->maxdelta = cstr->control_structures.size()-1;
+    }
+
+    void initialstate();
+    void rule1();
+    void rule2();
+    void rule3();
+    void rule4();
+    void rule5();
+
+    void printState();
+
+private:
+    ControlStructure* controlStructure;
+    int maxdelta;
+
+    vector<Term*>* control;
+    stack<Term*>* stack1;
+    Environment* env0;
+    Environment* env_curr;
+    vector<int>*  appliedRules;
+
+    Term* lookup(string);
+
+
+
+    //utils
+    void addDeltaToControl(Delta*);
+
+};
+
+void CSEMachine::addDeltaToControl(Delta * delta) {
+    if(delta == NULL){
+        cout << "ERR in addDeltaToControl() - delta is NULL" << endl;
+        return;
+    }
+    for(int i=0; i<delta->terms->size(); i++){
+        control->push_back(delta->terms->at(i));
+    }
+}
+
+void CSEMachine::printState() {
+    if(appliedRules==NULL || appliedRules->size()==0){
+        cout << "initialState:" << endl;
+    }else{
+        cout << "on step: " << appliedRules->size() + 1 << endl;
+    }
+
+    cout << "CONTROL: size = " << control->size() << endl;
+    for(vector<Term*>::iterator it = control->begin(); it != control->end(); ++it){
+        Term* t = *it;
+        cout << t->toString() << " " ;
+    }
+    cout << endl;
+
+    cout << "STACK: " << endl;
+    stack<Term*>* temp = new stack<Term*>();
+    while(!stack1->empty()){
+        Term* t = (Term*) stack1->top();
+        cout << t->toString() << " ";
+        temp->push(t);
+        stack1->pop();
+    }
+    while(!temp->empty()){
+        Term* t = (Term*) temp->top();
+        stack1->push(t);
+        temp->pop();
+    }
+
+    cout << endl <<  "ENVIRONMENT: " << endl;
+    cout << env_curr->toString();
+
+}
+
+void CSEMachine::initialstate() {
+    Term* ctrl_e0 = new Term();
+    ctrl_e0->type = "env";
+    ctrl_e0->value = 0;
+    control->push_back(ctrl_e0);
+    Delta* del0 = controlStructure->control_structures.at(0);
+    addDeltaToControl(del0);
+
+    Term* stk_e0 = new Term();
+    stk_e0->type = "env";
+    stk_e0->value = 0;
+    stack1->push(stk_e0);
+
+    env0 = new Environment();
+    env0->id = 0;
+    env_curr = env0;
+    //TODO - initialize env0 to PrimitiveEnvironment
+
+}
+
+
+
 /**
  * standardize AST ends here
  */
@@ -1699,10 +1829,80 @@ int main(int argc, char* argv[]) {
      */
 
 
+    /**
+     *
+     *  TEST control structures and develop CSE machine with examples and rules
+     *  Example 1: (lambdax. x - 1)4 * 2 = 6
+     */
+
+    TreeNode* ex1 = new TreeNode();
+    ex1->val = "gamma";
+    TreeNode* g2 = new TreeNode();
+    g2->val = "gamma";
+    ex1->left = g2;
+    TreeNode* two = new TreeNode();
+    two->val = "2";
+    g2->right = two;
+
+    TreeNode* star = new TreeNode();
+    star->val = "*";
+    g2->left = star;
+    TreeNode* g3 = new TreeNode();
+    g3->val = "gamma";
+    star->right = g3;
+
+    TreeNode* lam1 = new TreeNode();
+    lam1->val = "lambda";
+    TreeNode* four = new TreeNode();
+    four->val = "4";
+    g3->left = lam1;
+    lam1->right = four;
+
+    TreeNode* x = new TreeNode();
+    x->val = "x";
+    TreeNode* g4 = new TreeNode();
+    g4->val = "gamma";
+    lam1->left = x;
+    x->right = g4;
+
+    TreeNode* g5 = new TreeNode();
+    g5->val = "gamma";
+    TreeNode* one = new TreeNode();
+    one->val = "1";
+    g4->left = g5;
+    g5->right = one;
+
+    TreeNode* minus = new TreeNode();
+    minus->val = "-";
+    TreeNode* xx = new TreeNode();
+    xx->val = "x";
+    g5->left = minus;
+    minus->right = xx;
+
     ControlStructure* controlStructure = new ControlStructure();
+    controlStructure->generate(ex1);
+
+    bool printControlStructures = true;
+    if(printControlStructures){
+        cout << "Control Structures: " << endl;
+        controlStructure->print();
+    }
+
+
+
+    // working code!!
+    /*ControlStructure* controlStructure = new ControlStructure();
     controlStructure->generate(parser.top());
 
-    controlStructure->print();
+    bool printControlStructures = true;
+    if(printControlStructures){
+        cout << "Control Structures: " << endl;
+        controlStructure->print();
+    }*/
+
+    CSEMachine* cseMachine = new CSEMachine(controlStructure);
+    cseMachine->initialstate();
+    cseMachine->printState();
 
 
     return 0;
