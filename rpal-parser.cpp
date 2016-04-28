@@ -1228,10 +1228,12 @@ class Delta;
 
 class Environment{
 public:
+    Environment(){
+        bounded_variable_map = new unordered_map<Term*, Term*>();
+    }
     int id;
     Environment* parent;
-    unordered_map<string, int> bounded_varible_map;
-
+    unordered_map<Term*, Term*>* bounded_variable_map;
     string toString();
 };
 
@@ -1254,14 +1256,159 @@ public:
     int lam_c;                  // c
     vector<string>* boundedvars; // lambda
     int delta_idx;              // for conditional
+    vector<Term*> tuple_children; //for TUPLE
 
+    bool isLambda();
+    bool isGamma();
+    bool isTau();
+    bool isTauChild();
+    bool isDelta();
+    bool isEnv();
+    bool isNumber();
+    bool isName();
+    bool isRator();
+    bool isRand();
+    bool isBinaryOp();
+    bool isUnaryOp();
+    bool isPrimitiveFunc();
+    bool isIdentifier();
+    bool isString();
     string toString();
+    int getNumber();
+    string getString();
+    string getPrimitiveFunc();
+    bool isBool();
+    bool isTuple();
+    bool isYSTAR();
+    bool isETA();
+
+
+    bool is_num(string&);
 };
+
+bool Term::isETA() {
+    return type.compare("ETA")==0;
+}
+
+bool Term::isYSTAR() {
+    return type.compare("<Y*>")==0;
+}
+
+bool Term::isBool(){
+    return type.compare("true")==0 || type.compare("false")==0;
+}
+
+bool Term::isTuple() {
+    return type.compare("TUPLE")==0;
+}
+
+string Term::getString() {
+    if(isString()){
+        return type.substr(5, type.length()-6);
+    }
+}
+
+string Term::getPrimitiveFunc() {
+    return type.substr(4,type.length()-5);
+}
+
+int Term::getNumber(){
+    if(isNumber()){
+        return stoi(type.substr(5,type.length()-6));
+    }else{
+        return -1;
+    }
+}
+
+bool Term::isBinaryOp() {
+    if(type.compare("+")==0 || type.compare("-")==0 || type.compare("*")==0 || type.compare("/")==0 || type.compare("**")==0)
+        return true;
+    if(type.compare("or")==0 || type.compare("&")==0 || type.compare("gr")==0 || type.compare("ge")==0 || type.compare("ls")==0 || type.compare("le")==0 || type.compare("eq")==0 || type.compare("ne")==0)
+        return true;
+    return false;
+}
+
+bool Term::isUnaryOp() {
+    if(type.compare("not")==0 || type.compare("neg")==0)
+        return true;
+    return false;
+}
+
+bool Term::isPrimitiveFunc() {
+    return false;
+}
+
+//TODO
+bool Term::isRand() {
+    return isNumber() || isIdentifier() || isString() || isBool() || isTuple();
+    /*
+    if(!isName() && !isUnaryOp() && !isBinaryOp() && !isPrimitiveFunc())
+        return true;
+    return false;*/
+}
+
+bool Term::isRator() {
+    return type.find("<FN:", 0) != string::npos;
+}
+
+bool Term::is_num(string& s) {
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && std::isdigit(*it)) ++it;
+    return !s.empty() && it == s.end();
+}
+
+bool Term::isLambda() {
+    return this->type.compare("lambda")==0;
+}
+
+bool Term::isGamma(){
+    return this->type.compare("gamma")==0;
+}
+
+bool Term::isTau() {
+    return this->type.compare("tau")==0;
+}
+
+bool Term::isTauChild() {
+    return this->type.compare("tauchild")==0;
+}
+
+bool Term::isDelta() {
+    return this->type.compare("delta")==0;
+}
+
+bool Term::isEnv() {
+    return this->type.compare("env")==0;
+}
+
+bool Term::isIdentifier(){
+    return type.find("<ID:", 0) != string::npos;
+}
+
+bool Term::isNumber() {
+
+    return type.find("<INT:", 0)!=string::npos;
+    /*
+    if(!isLambda() && !isGamma() && !isTau() && !isTauChild() && !isDelta() && !isEnv()){
+        return is_num(type);
+    }else{
+        return false;
+    }*/
+}
+
+bool Term::isName(){
+    //return !isLambda() &&!isGamma() && !isTau() && !isTauChild() && !isDelta() && !isEnv() && !isNumber();
+    return isIdentifier();
+}
+
+bool Term::isString(){
+    return type.find("<STR:", 0)!=string::npos;
+}
 
 string Term::toString() {
     string str = "";
         //if(this==NULL) return NULL;
-        if(this->type.compare("lambda")==0){
+        if(isLambda()){
             if(boundedvars == NULL){
                 return "ERROR in Term.toString()";
             }
@@ -1269,14 +1416,14 @@ string Term::toString() {
             string varstr = "";
             for(int i=0; i<vars; i++)
                 varstr += boundedvars->at(i) + " ";
-            return "<lambda " + to_string(lam_k) + " " + varstr + ">";
-        }else if(this->type.compare("tau")==0) {
+            return "<lambda k:" + to_string(lam_k) + " env: " + to_string(value) + " vars: " + varstr + ">";
+        }else if(isTau()) {
             return "<tau " + to_string(tau_children) + ">";
-        }else if(this->type.compare("tauchild")==0){
+        }else if(isTauChild()){
             return "<tauchild " + to_string(delta_idx) + ">";
-        }else if(this->type.compare("delta")==0){
+        }else if(isDelta()){
             return "<delta " + to_string(delta_idx) + ">";
-        }else if(this->type.compare("env")==0){
+        }else if(isEnv()){
             return "<env " + to_string(value) + ">";
         }
         else{
@@ -1483,11 +1630,23 @@ public:
     void rule3();
     void rule4();
     void rule5();
+    void rule6();
+    void rule7();
+    void rule8();
+    void rule9();
+    void rule10();
+    void rule12();
+    void rule13();
+    void rec_rule();
 
+    void execute();
     void printState();
+
+    unordered_map<int, Environment*> env_map;
 
 private:
     ControlStructure* controlStructure;
+    int envs;
     int maxdelta;
 
     vector<Term*>* control;
@@ -1496,14 +1655,363 @@ private:
     Environment* env_curr;
     vector<int>*  appliedRules;
 
-    Term* lookup(string);
+    Term* lookup(Term*);
 
 
 
     //utils
     void addDeltaToControl(Delta*);
+    Term* getValueFromEnv(Term*);
+
+    int fetchRule();
+    void executeRule(int);
+
+    void properprint(string);
+
+    Term* apply(Term*, Term*);
+    Term* apply_binary(Term*, Term*, Term*);
+    Term* apply_unary(Term*, Term*);
 
 };
+
+void CSEMachine::properprint(string s){
+    for ( int i = 0 ; i < s.length() ; i++ )
+    {
+        if( s[i] == '\n')
+            cout<<"\\n";
+        else
+            cout << s[i];
+    }
+}
+
+Term* CSEMachine::apply(Term* rator, Term* rand){
+    string pfunc = rator->getPrimitiveFunc();
+    if(pfunc.compare("Print")==0){
+        Term* dummy = new Term();
+        if(rand->isNumber()){
+            cout << rand->getNumber() ;
+        }else if(rand->isString()){
+            properprint(rand->getString()) ;
+        }
+        dummy->type = "dummy";
+        return dummy;
+    }
+    return NULL;
+}
+
+Term* CSEMachine::apply_binary(Term* binOp, Term* rand1, Term* rand2) {
+    int val1 = rand1->getNumber();
+    int val2 = rand2->getNumber();
+    Term* res = new Term();
+    if(binOp->type.compare("+")==0){
+        //res->type = "value";
+        //res->value = val1 + val2;
+        //cout << "inside apply_binary() '+' operator success" << endl;
+        res->type = "<INT:" + to_string(val1 + val2) + ">";
+        return res;
+    }else if(binOp->type.compare("-")==0){
+        //res->type = "value";
+        //res->value = val1 - val2;
+        //cout << "inside apply_binary() '-' operator success" << endl;
+        res->type = "<INT:" + to_string(val1 - val2) + ">";
+        return res;
+    }else if(binOp->type.compare("*")==0){
+        res->type = "<INT:" + to_string(val1*val2) + ">";
+        return res;
+    }else if(binOp->type.compare("/")==0){
+        res->type = "<INT:" + to_string(val1/val2) + ">";
+        return res;
+    }
+    return NULL;
+}
+
+Term* CSEMachine::apply_unary(Term* unop, Term* rand) {
+    /*if(rand->isNumber()){
+
+    }*/
+    return NULL;
+}
+
+int CSEMachine::fetchRule() {
+
+    if(control->size()==0 && stack1->size()==1){
+        Term* res = stack1->top();
+        if(res->type.compare("dummy")!=0)
+            cout << "Successful Termination:: result = " + res->type << endl;
+        return -5;
+    }
+
+    Term* ctrl_last = control->at(control->size()-1);
+
+    if(ctrl_last->isYSTAR()){
+        control->pop_back();
+        stack1->push(ctrl_last);
+        return fetchRule();
+    }
+
+    if(ctrl_last->type.compare("delta")==0){
+        control->pop_back();
+        addDeltaToControl(controlStructure->control_structures.at(ctrl_last->delta_idx));
+        cout << "Loading Delta" << endl << endl;
+        printState();
+        return fetchRule();
+    }
+
+    if(ctrl_last->type.compare("tauchild")==0){
+        control->pop_back();
+        addDeltaToControl(controlStructure->control_structures.at(ctrl_last->delta_idx));
+        cout << "Loading tauchild" << endl;
+        printState();
+        return fetchRule();
+    }
+
+    //if(!ctrl_last->isBinaryOp() && !ctrl_last->isUnaryOp() && (ctrl_last->isName() || ctrl_last->isNumber() || ctrl_last->isString())){
+    if(ctrl_last->isRand()){
+        //Rule 1
+        return 1;
+    }else if(ctrl_last->isLambda()){
+        //Rule 2
+        return 2;
+    }else if(ctrl_last->isEnv()){
+        //Rule 5
+        Term* v = stack1->top();
+        //TODO check (env     lambda env) also possible !!
+        if(v->isRand() || v->type.compare("value")==0 || v->is_num(v->type) || v->isLambda() || v->type.compare("dummy")==0){
+            stack1->pop();
+            Term* e = stack1->top();
+            if(e->type.compare("env")==0){
+                stack1->push(v);
+                return 5;
+            }else{
+                stack1->push(v);
+                cout << "ERR in fetchRule() - while checking for Rule 5" << endl;
+                return -1;
+            }
+        }
+    }
+
+    if(ctrl_last->isGamma()){
+
+        //Rule 3
+        Term* rtr = stack1->top();
+        if(rtr->isRator()){
+            stack1->pop();
+            Term* rnd = stack1->top();
+            if(rnd->isRand()){
+                stack1->push(rtr);
+                return 3;
+            }else{
+                stack1->push(rtr);
+                cout << "ERR in fetchRule() - while checking for Rule 3" << endl;
+                return -1;
+            }
+        }
+
+        //Rule 4
+        Term* lam = stack1->top();
+        if(lam->isLambda()){
+            stack1->pop();
+            Term* rnd = stack1->top();
+            if(rnd->isETA()){
+                stack1->push(lam);
+                cout << "SPECIAL REC RULE" << endl;
+                return 15;
+            }
+            if(rnd->isRand() || rnd->isLambda() || rnd->isTuple()){ //TODO check Special case -- see tests/add
+                stack1->push(lam);
+                return 4;
+            }else{
+                stack1->push(lam);
+                cout << "ERR in fetchRule() - while checking for Rule 4" << endl;
+                return -1;
+            }
+        }
+
+        //Rule10
+        Term* tuple = stack1->top();
+        if(tuple->isTuple()){
+            stack1->pop();
+            Term* idx = stack1->top();
+            if(idx->isNumber()){
+                stack1->push(tuple);
+                return 10;
+            }else{
+                stack1->push(tuple);
+                cout << "ERR in fetchRule() - while checking for Rule 10" << endl;
+                return -1;
+            }
+        }
+
+        //Rule12
+        Term* ystar = stack1->top();
+        if(ystar->isYSTAR()){
+            stack1->pop();
+            Term* lm = stack1->top();
+            if(lm->isLambda()){
+                stack1->push(ystar);
+                return 12;
+            }else{
+                stack1->push(ystar);
+                cout << "ERR in fetchRule() - while checking for Rule 12" << endl;
+                return -1;
+            }
+        }
+
+        //Rule13
+        Term* eta = stack1->top();
+        if(eta->isETA()){
+            return 13;
+        }
+
+    }
+
+    //Rule 6
+    if(ctrl_last->isBinaryOp()){
+        Term* rnd1 = stack1->top();
+        if(rnd1->isRand()){
+            stack1->pop();
+            Term* rnd2 = stack1->top();
+            if(rnd2->isRand()) {
+                stack1->push(rnd1);
+                return 6;
+            }else{
+                stack1->push(rnd1);
+                cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
+                return -1;
+            }
+        }else{
+            cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
+            return -1;
+        }
+    }
+
+    //Rule 7
+    if(ctrl_last->isUnaryOp()){
+        Term* rand = stack1->top();
+        if(rand->isRand()){
+            return 7;
+        }
+        cout << "ERR in fetchRule() - while checking for Rule 7" << endl;
+        return -1;
+    }
+
+    //Rule8
+    if(ctrl_last->type.compare("beta")==0){
+        Term* t = stack1->top();
+        if(t->type.compare("true")==0){
+            return 8;
+        }else if(t->type.compare("false")==0){
+            return 8;
+        }else{
+            cout << "ERR in fetchRule() - while checking for Rule 8" << endl;
+            return -1;
+        }
+    }
+
+    //Rule9
+    if(ctrl_last->type.compare("tau")==0){
+        int tauchildren = ctrl_last->tau_children;
+        stack<Term*>* temp = new stack<Term*>();
+        for(int i=0; i<tauchildren; i++){
+            Term* v = (Term*) stack1->top();
+            if(!v->isRand()){
+                cout << "ERR in fetchRule() - while checking for Rule 9" << endl;
+                return -1;
+            }
+            temp->push(v);
+            stack1->pop();
+        }
+        while(!temp->empty()){
+            Term* v = (Term*) temp->top();
+            stack1->push(v);
+            temp->pop();
+        }
+        return 9;
+    }
+
+
+    cout << "end of rules!!" << endl;
+    return -1;
+
+}
+
+void CSEMachine::execute() {
+    int rule = 0;
+    while((rule = fetchRule())>0){
+        cout << " Executing Rule: " + to_string(rule) << endl << endl;
+        executeRule(rule);
+        appliedRules->push_back(rule);
+        printState();
+    }
+}
+
+void CSEMachine::executeRule(int rule) {
+   switch(rule){
+       case 1:  rule1();
+                break;
+       case 2:  rule2();
+                break;
+       case 3:  rule3();
+                break;
+       case 4:  rule4();
+                break;
+       case 5:  rule5();
+                break;
+       case 6:  rule6();
+                break;
+       case 7:  rule7();
+                break;
+       case 8:  rule8();
+                break;
+       case 9:  rule9();
+                break;
+       case 10: rule10();
+                break;
+       case 12: rule12();
+                break;
+       case 13: rule13();
+                break;
+       case 15: rec_rule();
+                break;
+       default: break;
+   }
+}
+
+Term* CSEMachine::getValueFromEnv(Term* name) {
+    Environment* tmp = env_curr;
+    while(tmp!=NULL){
+
+        for(auto it = tmp->bounded_variable_map->begin(); it!=tmp->bounded_variable_map->end(); ++it){
+            Term* x = it->first;
+            Term* val = it->second;
+            /*string compareWith = "";
+            if(name->isIdentifier()){
+                compareWith = name->getString();
+            }else if (name->isTuple()){
+                cout << "TODO HANDLE THIS - when lookup item is TUPLE" << endl;
+            }else if(name->isLambda()){
+                cout << "TODO HANDLE THIS - when lookup item is lambda" << endl;
+            }else{
+                compareWith = name->type;
+            }*/
+            if(x->type.compare(name->type)==0){
+                Term* res = val;
+                res->type = val->type;
+                return res;
+            }
+        }
+        tmp = tmp->parent;
+    }
+
+
+    string pfunc = name->getPrimitiveFunc();
+    Term* f = new Term();
+    f->type = "<FN:" + pfunc + ">";
+    //cout << "Found Primitive Function: " + f->type << endl;
+    return f;
+    //cout << "Error: getValueFromEnv() failed - not able to find value for given Name in any Env" << endl;
+    return NULL;
+}
 
 void CSEMachine::addDeltaToControl(Delta * delta) {
     if(delta == NULL){
@@ -1517,19 +2025,20 @@ void CSEMachine::addDeltaToControl(Delta * delta) {
 
 void CSEMachine::printState() {
     if(appliedRules==NULL || appliedRules->size()==0){
-        cout << "initialState:" << endl;
+        //cout << "initialState:" << endl;
     }else{
-        cout << "on step: " << appliedRules->size() + 1 << endl;
+        //cout << "on step: " << appliedRules->size() + 1 << endl;
     }
 
-    cout << "CONTROL: size = " << control->size() << endl;
+    //cout << "CONTROL: size = " << control->size() << endl;
+    cout << "CONTROL: " ;
     for(vector<Term*>::iterator it = control->begin(); it != control->end(); ++it){
         Term* t = *it;
         cout << t->toString() << " " ;
     }
     cout << endl;
 
-    cout << "STACK: " << endl;
+    cout << "STACK: " ;
     stack<Term*>* temp = new stack<Term*>();
     while(!stack1->empty()){
         Term* t = (Term*) stack1->top();
@@ -1543,7 +2052,7 @@ void CSEMachine::printState() {
         temp->pop();
     }
 
-    cout << endl <<  "ENVIRONMENT: " << endl;
+    cout << endl <<  "ENVIRONMENT: ";
     cout << env_curr->toString();
 
 }
@@ -1563,12 +2072,249 @@ void CSEMachine::initialstate() {
 
     env0 = new Environment();
     env0->id = 0;
+    env_map.insert(make_pair(0, env0));
+    envs = 1;
     env_curr = env0;
+    env0->parent = NULL;
     //TODO - initialize env0 to PrimitiveEnvironment
 
 }
 
+Term* CSEMachine::lookup(Term* ctrl_term) {
+    if(ctrl_term->isNumber() || ctrl_term->isString()){
+        return ctrl_term;
+    }
+    if(ctrl_term->isIdentifier() || ctrl_term->isTuple() || ctrl_term->isLambda()){
+        return getValueFromEnv(ctrl_term);
+    }else{
+        cout << "ERROR: Term is not NAME - cannot do lookup" << endl;
+        return NULL;
+    }
+}
 
+
+/**
+ *  if(Name in Control)
+ *      Stack.push(lookup(Name))
+ */
+void CSEMachine::rule1() {
+    Term* name = control->back();
+    control->pop_back();
+    Term* ob = lookup(name);
+    stack1->push(ob);
+}
+
+void CSEMachine::rule2() {
+    Term* lam = control->back();
+    control->pop_back();
+    lam->value = env_curr->id;
+    stack1->push(lam);
+}
+
+void CSEMachine::rule3(){
+    Term* gam = control->back();
+    control->pop_back();
+    Term* rtr = stack1->top();
+    stack1->pop();
+    Term* rnd = stack1->top();
+    stack1->pop();
+    Term* res = apply(rtr, rnd);
+    stack1->push(res);
+}
+
+//Rule 4 and Rule 11
+void CSEMachine::rule4(){
+    Term* gam = control->back();
+    control->pop_back();
+    Term* lam = stack1->top();
+    stack1->pop();
+
+    Environment* env_n = new Environment();
+    env_n->id = envs;
+    env_n->parent = env_map.at(lam->value);
+    env_map.insert(make_pair(envs, env_n));
+    envs++;
+
+    Term* ctrl_env = new Term();
+    ctrl_env->type = "env";
+    ctrl_env->value = env_n->id;
+    control->push_back(ctrl_env);
+
+    Delta* delta = controlStructure->control_structures.at(lam->lam_k);
+    Term* ctrl_del = new Term();
+    ctrl_del->type ="delta";
+    ctrl_del->delta_idx = lam->lam_k;
+    control->push_back(ctrl_del);
+
+    //Term* rand = stack1->top();
+    //stack1->pop();
+
+    //Term* x = new Term();
+    //x->type = *lam->boundedvars->begin();
+    //make_pair(x, rand);
+    //env_n->bounded_variable_map->insert(make_pair(x, rand));
+
+    int varsize = lam->boundedvars->size();
+
+    Term* top = stack1->top();
+    bool boundedToTuple = false;
+    if(varsize > 1 && top->isTuple()){ //TODO check - Assuming lambda bounded vars is equal to the next tuple size
+        if(top->tuple_children.size()!=varsize){
+            cout << "in rule4() -- Wrong Assumption that lambda bounded vars = next tuple size" << endl;
+            return;
+        }
+        for(int i=0; i<varsize; i++){
+            Term* x = new Term();
+            x->type = lam->boundedvars->at(i);
+            Term* tup_val = top->tuple_children.at(i);
+            env_n->bounded_variable_map->insert(make_pair(x, tup_val));
+        }
+        boundedToTuple = true;
+        stack1->pop(); //pop tuple
+    }
+
+
+    for(int i=0; i<varsize && !boundedToTuple; i++){
+        Term* x = new Term();
+        x->type = lam->boundedvars->at(i);
+        Term* rand = stack1->top();
+        stack1->pop();
+        env_n->bounded_variable_map->insert(make_pair(x, rand));
+    }
+
+
+    Term* stck_env = new Term();
+    stck_env->type = "env";
+    stck_env->value = env_n->id;
+    stack1->push(stck_env);
+
+    env_curr = env_n;
+}
+
+void CSEMachine::rule5(){
+    Term* env_n = control->back();
+    control->pop_back();
+    Term* value = stack1->top();
+    stack1->pop();
+    Term* stack_env_n = stack1->top();
+    stack1->pop();
+    stack1->push(value);
+}
+
+void CSEMachine::rule6(){
+    //TODO
+    Term* bop = control->back();
+    control->pop_back();
+
+    Term* rand1 = stack1->top();
+    stack1->pop();
+    Term* rand2 = stack1->top();
+    stack1->pop();
+
+    Term* res = apply_binary(bop, rand1, rand2);
+    stack1->push(res);
+}
+
+void CSEMachine::rule7(){
+    Term* uop = control->back();
+    control->pop_back();
+    Term* rand = stack1->top();
+    stack1->pop();
+    Term* res = apply_unary(uop, rand);
+    stack1->push(res);
+}
+
+void CSEMachine::rule8() {
+    Term* beta = control->back();
+    control->pop_back();
+    Term* boo = stack1->top();
+    if(boo->type.compare("true")==0){
+        control->pop_back();
+    }else if(boo->type.compare("false")==0){
+        Term* del_else = control->back();
+        control->pop_back();
+        control->pop_back();
+        control->push_back(del_else);
+    }
+}
+
+void CSEMachine::rule9(){
+    Term* taun = control->back();
+    control->pop_back();
+    int tau_children = taun->tau_children;
+    Term* tuple = new Term();
+    tuple->type = "TUPLE";
+    for(int i=0; i<tau_children; i++){
+        Term* v = stack1->top();
+        tuple->tuple_children.push_back(v);
+        stack1->pop();
+    }
+    stack1->push(tuple);
+}
+
+void CSEMachine::rule10(){
+    control->pop_back(); //pop gamma
+    Term* tuple = stack1->top();
+    stack1->pop();
+    Term* idx = stack1->top();
+    stack1->pop();
+    int index = idx->getNumber();
+    Term* vi = tuple->tuple_children.at(index);
+    stack1->push(vi);
+}
+
+void CSEMachine::rule12(){
+    //TODO
+    control->pop_back(); //pop gamma
+    stack1->pop(); //pop ystar
+    Term* lam = stack1->top();
+    stack1->pop();
+    Term* eta = new Term();
+    eta->type = "ETA";
+    eta->tuple_children.push_back(lam);
+    stack1->push(eta);
+
+}
+
+void CSEMachine::rule13(){
+    Term* gam = new Term();
+    gam->type = "gamma";
+    control->push_back(gam);
+    Term* eta = stack1->top();
+    Term* lam = eta->tuple_children.at(0);
+    stack1->push(lam);
+}
+
+
+void CSEMachine::rec_rule() {
+    Term* gam = control->back();
+    Term* lam = stack1->top();
+    stack1->pop();
+    Term* eta = stack1->top();
+    stack1->pop(); //pop eta
+
+    Environment* env_n = new Environment();
+    env_n->id = envs;
+    env_n->parent = env_map.at(lam->value);
+    env_map.insert(make_pair(envs, env_n));
+    envs++;
+
+    Term* ctrl_env = new Term();
+    ctrl_env->type = "env";
+    ctrl_env->value = env_n->id;
+    control->push_back(ctrl_env);
+
+    Delta* delta = controlStructure->control_structures.at(lam->lam_k);
+    addDeltaToControl(delta);
+
+    Term* stck_env = new Term();
+    stck_env->type = "env";
+    stck_env->value = env_n->id;
+    stack1->push(stck_env);
+
+    env_curr = env_n;
+
+}
 
 /**
  * standardize AST ends here
@@ -1835,21 +2581,26 @@ int main(int argc, char* argv[]) {
      *  Example 1: (lambdax. x - 1)4 * 2 = 6
      */
 
-    TreeNode* ex1 = new TreeNode();
+    /*TreeNode* ex1 = new TreeNode();
     ex1->val = "gamma";
     TreeNode* g2 = new TreeNode();
     g2->val = "gamma";
-    ex1->left = g2;
+    ex1->left = g2;*/
+
     TreeNode* two = new TreeNode();
     two->val = "2";
-    g2->right = two;
+    //g2->right = two;
 
     TreeNode* star = new TreeNode();
     star->val = "*";
-    g2->left = star;
+    //g2->left = star;
     TreeNode* g3 = new TreeNode();
     g3->val = "gamma";
-    star->right = g3;
+
+    star->left = g3;
+    g3->right = two;
+
+    //star->right = g3;
 
     TreeNode* lam1 = new TreeNode();
     lam1->val = "lambda";
@@ -1860,39 +2611,31 @@ int main(int argc, char* argv[]) {
 
     TreeNode* x = new TreeNode();
     x->val = "x";
-    TreeNode* g4 = new TreeNode();
-    g4->val = "gamma";
+    //TreeNode* g4 = new TreeNode();
+    //g4->val = "gamma";
     lam1->left = x;
-    x->right = g4;
+    //x->right = minus;
 
-    TreeNode* g5 = new TreeNode();
-    g5->val = "gamma";
+    //TreeNode* g5 = new TreeNode();
+    //g5->val = "gamma";
     TreeNode* one = new TreeNode();
     one->val = "1";
-    g4->left = g5;
-    g5->right = one;
+    //g4->left = g5;
+    //g5->right = one;
 
     TreeNode* minus = new TreeNode();
     minus->val = "-";
     TreeNode* xx = new TreeNode();
     xx->val = "x";
-    g5->left = minus;
-    minus->right = xx;
+    //g5->left = minus;
+    //minus->right = xx;
 
-    ControlStructure* controlStructure = new ControlStructure();
-    controlStructure->generate(ex1);
+    x->right = minus;
+    minus->left = xx;
+    xx->right = one;
 
-    bool printControlStructures = true;
-    if(printControlStructures){
-        cout << "Control Structures: " << endl;
-        controlStructure->print();
-    }
-
-
-
-    // working code!!
     /*ControlStructure* controlStructure = new ControlStructure();
-    controlStructure->generate(parser.top());
+    controlStructure->generate(star);
 
     bool printControlStructures = true;
     if(printControlStructures){
@@ -1900,9 +2643,23 @@ int main(int argc, char* argv[]) {
         controlStructure->print();
     }*/
 
+
+
+    // working code!!
+    ControlStructure* controlStructure = new ControlStructure();
+    controlStructure->generate(parser.top());
+
+    bool printControlStructures = true;
+    if(printControlStructures){
+        cout << "Control Structures: " << endl;
+        controlStructure->print();
+    }
+
     CSEMachine* cseMachine = new CSEMachine(controlStructure);
     cseMachine->initialstate();
-    cseMachine->printState();
+    //cseMachine->printState();
+    cseMachine->execute();
+
 
 
     return 0;
