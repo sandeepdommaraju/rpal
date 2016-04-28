@@ -9,6 +9,9 @@
 
 using namespace std;
 
+bool output = false;
+bool debug = false;
+
 /**
 *   Token START
 */
@@ -420,7 +423,7 @@ public:
 private:
 };
 
-bool debug = false;
+//bool debug = false;
 bool empty = true;
 
 //char ops[] = {'+', '-', '*', '<', '>', '&', '.', '@', '/', ':', '=', '~', '|', '$', '!', '#', '%', '^', '_', '[', ']', '{', '}', '"', '`', '?' };
@@ -950,17 +953,17 @@ void Parser::standardize_AST(TreeNode *root) {
 //LET
 TreeNode* Parser::standardize_LET(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->right==NULL || root->left->left==NULL || root->left->left->right==NULL){
-        cout << "let subtree is not proper to standardize_LET" << endl;
+        //cout << "let subtree is not proper to standardize_LET" << endl;
         return NULL;
     }
 
     if(root->val.compare("let")!=0){
-        cout << "let AST does not contain let" << endl;
+        //cout << "let AST does not contain let" << endl;
         return NULL;
     }
 
     if(root->left->val.compare("=")!=0){
-        cout << "let AST does not contain equals" << endl;
+        //cout << "let AST does not contain equals" << endl;
         return NULL;
     }
 
@@ -979,17 +982,17 @@ TreeNode* Parser::standardize_LET(TreeNode *root) {
 //WHERE
 TreeNode* Parser::standardize_WHERE(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->right==NULL || root->left->right->left==NULL || root->left->right->left->right==NULL){
-        cout << "where subtree is not proper to standardize_WHERE" << endl;
+        if(debug) cout << "where subtree is not proper to standardize_WHERE" << endl;
         return NULL;
     }
 
     if(root->val.compare("where")!=0){
-        cout << "where AST does not contain where" << endl;
+        if(debug) cout << "where AST does not contain where" << endl;
         return NULL;
     }
 
     if(root->left->right->val.compare("=")!=0){
-        cout << "where does not contain equals" << endl;
+        if(debug) cout << "where does not contain equals" << endl;
         return NULL;
     }
 
@@ -1008,17 +1011,17 @@ TreeNode* Parser::standardize_WHERE(TreeNode *root) {
 TreeNode* Parser::standardize_WITHIN(TreeNode *root) {
 
     if(root==NULL || root->left==NULL || root->left->right==NULL || root->left->left==NULL || root->left->left->right==NULL || root->left->right->left==NULL || root->left->right->left->right==NULL){
-        cout << "within subtree is not proper to standardize_WITHIN" << endl;
+        if(debug) cout << "within subtree is not proper to standardize_WITHIN" << endl;
         return NULL;
     }
 
     if(root->val.compare("within")!=0){
-        cout << "within AST does not contain within" << endl;
+        if(debug) cout << "within AST does not contain within" << endl;
         return NULL;
     }
 
     if(root->left->val.compare("=")!=0 || root->left->right->val.compare("=")!=0){
-        cout << "within does not contain equals" << endl;
+        if(debug) cout << "within does not contain equals" << endl;
         return NULL;
     }
 
@@ -1065,12 +1068,12 @@ TreeNode* Parser::standardize_WITHIN(TreeNode *root) {
 //FUNCFORM
 TreeNode* Parser::standardize_FUNCFORM(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->right==NULL || root->left->right->right==NULL){
-        cout << "funcform subtree is not proper to standardize_FUNCFORM" << endl;
+        if(debug) cout << "funcform subtree is not proper to standardize_FUNCFORM" << endl;
         return NULL;
     }
 
     if(root->val.compare("function_form")!=0){
-        cout << "funcform AST does not contain function_form" << endl;
+        if(debug) cout << "funcform AST does not contain function_form" << endl;
         return NULL;
     }
 
@@ -1100,21 +1103,21 @@ TreeNode* Parser::standardize_FUNCFORM(TreeNode *root) {
 //AND
 TreeNode* Parser::standardize_AND(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->right==NULL){
-        cout << "and subtree is not proper to standardize_AND" << endl;
+        if(debug) cout << "and subtree is not proper to standardize_AND" << endl;
         return NULL;
     }
     if(root->val.compare("and")!=0){
-        cout << "and AST does not contain and" << endl;
+        if(debug) cout << "and AST does not contain and" << endl;
         return NULL;
     }
     if(root->left->val.compare("=")!=0 || root->left->right->val.compare("=")!=0){
-        cout << "left/right child is not = to standardize_AND" << endl;
+        if(debug) cout << "left/right child is not = to standardize_AND" << endl;
         return NULL;
     }
 
     TreeNode* eq = root->left;
     if(eq->left==NULL || eq->left->right==NULL){
-        cout << "not even a single assignment/binding found to standardize_AND" << endl;
+        if(debug) cout << "not even a single assignment/binding found to standardize_AND" << endl;
         return NULL;
     }
 
@@ -1140,7 +1143,7 @@ TreeNode* Parser::standardize_AND(TreeNode *root) {
         tau->right = eq->left->right;
 
         if(comma->right==NULL || tau->right==NULL){
-            cout << "one child of equal is NULL to standardize_AND" << endl;
+            if(debug) cout << "one child of equal is NULL to standardize_AND" << endl;
             return NULL;
         }
 
@@ -1156,11 +1159,11 @@ TreeNode* Parser::standardize_AND(TreeNode *root) {
 //AT
 TreeNode* Parser::standardize_AT(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->right==NULL){
-        cout << "at subtree is not proper to standardize_AT" << endl;
+        if(debug) cout << "at subtree is not proper to standardize_AT" << endl;
         return NULL;
     }
     if(root->val.compare("@")!=0){
-        cout << "at AST does not contain at" << endl;
+        if(debug) cout << "at AST does not contain at" << endl;
         return NULL;
     }
     root->val = "gamma";
@@ -1169,7 +1172,7 @@ TreeNode* Parser::standardize_AT(TreeNode *root) {
     TreeNode* E2 = N->right;
 
     if(E1==NULL || E2==NULL || N==NULL){
-        cout << "E1/N/E2 is null to standardize_AT" << endl;
+        if(debug) cout << "E1/N/E2 is null to standardize_AT" << endl;
         return NULL;
     }
 
@@ -1189,11 +1192,11 @@ TreeNode* Parser::standardize_AT(TreeNode *root) {
 //REC
 TreeNode* Parser::standardize_REC(TreeNode *root) {
     if(root==NULL || root->left==NULL || root->left->left==NULL || root->left->left->right==NULL){
-        cout << "rec subtree is not proper to standardize_REC" << endl;
+        if(debug) cout << "rec subtree is not proper to standardize_REC" << endl;
         return NULL;
     }
     if(root->val.compare("rec")!=0){
-        cout << "at AST does not contain at" << endl;
+        if(debug) cout << "at AST does not contain at" << endl;
         return NULL;
     }
     root->val = "=";
@@ -1472,7 +1475,7 @@ public:
 void ControlStructure::generate(TreeNode* root) {
 
     if(root==NULL){
-        cout << "root is NULL cannot generate control structures" << endl;
+        if(debug) cout << "root is NULL cannot generate control structures" << endl;
     }
 
     queue<TreeNode*>* st_roots = new queue<TreeNode*>();
@@ -1500,7 +1503,7 @@ void ControlStructure::generateDelta(TreeNode* root, Delta* delta, queue<TreeNod
     if(root->val.compare("lambda")==0){
 
         if(root->left==NULL || root->left->right==NULL){
-            cout << "child NULL for lambda to generate control structure" << endl;
+            if(debug) cout << "child NULL for lambda to generate control structure" << endl;
             return;
         }
 
@@ -1614,7 +1617,7 @@ public:
 
     CSEMachine(ControlStructure* cstr){
         if(cstr==NULL || cstr->control_structures.size()==0){
-            cout << "ERR in CSEMachine contructor!! - control sturctures could be NULL" << endl;
+            if(debug) cout << "ERR in CSEMachine contructor!! - control sturctures could be NULL" << endl;
             return;
         }
         this->controlStructure = cstr;
@@ -1689,9 +1692,9 @@ Term* CSEMachine::apply(Term* rator, Term* rand){
     if(pfunc.compare("Print")==0){
         Term* dummy = new Term();
         if(rand->isNumber()){
-            cout << rand->getNumber() ;
+            if(output) cout << rand->getNumber() ;
         }else if(rand->isString()){
-            properprint(rand->getString()) ;
+            if(output) properprint(rand->getString()) ;
         }
         dummy->type = "dummy";
         return dummy;
@@ -1704,15 +1707,9 @@ Term* CSEMachine::apply_binary(Term* binOp, Term* rand1, Term* rand2) {
     int val2 = rand2->getNumber();
     Term* res = new Term();
     if(binOp->type.compare("+")==0){
-        //res->type = "value";
-        //res->value = val1 + val2;
-        //cout << "inside apply_binary() '+' operator success" << endl;
         res->type = "<INT:" + to_string(val1 + val2) + ">";
         return res;
     }else if(binOp->type.compare("-")==0){
-        //res->type = "value";
-        //res->value = val1 - val2;
-        //cout << "inside apply_binary() '-' operator success" << endl;
         res->type = "<INT:" + to_string(val1 - val2) + ">";
         return res;
     }else if(binOp->type.compare("*")==0){
@@ -1736,8 +1733,8 @@ int CSEMachine::fetchRule() {
 
     if(control->size()==0 && stack1->size()==1){
         Term* res = stack1->top();
-        if(res->type.compare("dummy")!=0)
-            cout << "Successful Termination:: result = " + res->type << endl;
+        if(output && res->type.compare("dummy")!=0)
+            cout << res->type << endl;
         return -5;
     }
 
@@ -1752,16 +1749,16 @@ int CSEMachine::fetchRule() {
     if(ctrl_last->type.compare("delta")==0){
         control->pop_back();
         addDeltaToControl(controlStructure->control_structures.at(ctrl_last->delta_idx));
-        cout << "Loading Delta" << endl << endl;
-        printState();
+        if(debug) cout << "Loading Delta" << endl << endl;
+        if(debug) printState();
         return fetchRule();
     }
 
     if(ctrl_last->type.compare("tauchild")==0){
         control->pop_back();
         addDeltaToControl(controlStructure->control_structures.at(ctrl_last->delta_idx));
-        cout << "Loading tauchild" << endl;
-        printState();
+        if(debug) cout << "Loading tauchild" << endl;
+        if(debug) printState();
         return fetchRule();
     }
 
@@ -1784,7 +1781,7 @@ int CSEMachine::fetchRule() {
                 return 5;
             }else{
                 stack1->push(v);
-                cout << "ERR in fetchRule() - while checking for Rule 5" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 5" << endl;
                 return -1;
             }
         }
@@ -1802,7 +1799,7 @@ int CSEMachine::fetchRule() {
                 return 3;
             }else{
                 stack1->push(rtr);
-                cout << "ERR in fetchRule() - while checking for Rule 3" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 3" << endl;
                 return -1;
             }
         }
@@ -1814,7 +1811,7 @@ int CSEMachine::fetchRule() {
             Term* rnd = stack1->top();
             if(rnd->isETA()){
                 stack1->push(lam);
-                cout << "SPECIAL REC RULE" << endl;
+                if(debug) cout << "SPECIAL REC RULE" << endl;
                 return 15;
             }
             if(rnd->isRand() || rnd->isLambda() || rnd->isTuple()){ //TODO check Special case -- see tests/add
@@ -1822,7 +1819,7 @@ int CSEMachine::fetchRule() {
                 return 4;
             }else{
                 stack1->push(lam);
-                cout << "ERR in fetchRule() - while checking for Rule 4" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 4" << endl;
                 return -1;
             }
         }
@@ -1837,7 +1834,7 @@ int CSEMachine::fetchRule() {
                 return 10;
             }else{
                 stack1->push(tuple);
-                cout << "ERR in fetchRule() - while checking for Rule 10" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 10" << endl;
                 return -1;
             }
         }
@@ -1852,7 +1849,7 @@ int CSEMachine::fetchRule() {
                 return 12;
             }else{
                 stack1->push(ystar);
-                cout << "ERR in fetchRule() - while checking for Rule 12" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 12" << endl;
                 return -1;
             }
         }
@@ -1876,11 +1873,11 @@ int CSEMachine::fetchRule() {
                 return 6;
             }else{
                 stack1->push(rnd1);
-                cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
                 return -1;
             }
         }else{
-            cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
+            if(debug) cout << "ERR in fetchRule() - while checking for Rule 6" << endl;
             return -1;
         }
     }
@@ -1891,7 +1888,7 @@ int CSEMachine::fetchRule() {
         if(rand->isRand()){
             return 7;
         }
-        cout << "ERR in fetchRule() - while checking for Rule 7" << endl;
+        if(debug) cout << "ERR in fetchRule() - while checking for Rule 7" << endl;
         return -1;
     }
 
@@ -1903,7 +1900,7 @@ int CSEMachine::fetchRule() {
         }else if(t->type.compare("false")==0){
             return 8;
         }else{
-            cout << "ERR in fetchRule() - while checking for Rule 8" << endl;
+            if(debug) cout << "ERR in fetchRule() - while checking for Rule 8" << endl;
             return -1;
         }
     }
@@ -1915,7 +1912,7 @@ int CSEMachine::fetchRule() {
         for(int i=0; i<tauchildren; i++){
             Term* v = (Term*) stack1->top();
             if(!v->isRand()){
-                cout << "ERR in fetchRule() - while checking for Rule 9" << endl;
+                if(debug) cout << "ERR in fetchRule() - while checking for Rule 9" << endl;
                 return -1;
             }
             temp->push(v);
@@ -1930,7 +1927,7 @@ int CSEMachine::fetchRule() {
     }
 
 
-    cout << "end of rules!!" << endl;
+    if(debug) cout << "end of rules!!" << endl;
     return -1;
 
 }
@@ -1938,10 +1935,10 @@ int CSEMachine::fetchRule() {
 void CSEMachine::execute() {
     int rule = 0;
     while((rule = fetchRule())>0){
-        cout << " Executing Rule: " + to_string(rule) << endl << endl;
+        if(debug) cout << " Executing Rule: " + to_string(rule) << endl << endl;
         executeRule(rule);
         appliedRules->push_back(rule);
-        printState();
+        if(debug) printState();
     }
 }
 
@@ -1984,16 +1981,6 @@ Term* CSEMachine::getValueFromEnv(Term* name) {
         for(auto it = tmp->bounded_variable_map->begin(); it!=tmp->bounded_variable_map->end(); ++it){
             Term* x = it->first;
             Term* val = it->second;
-            /*string compareWith = "";
-            if(name->isIdentifier()){
-                compareWith = name->getString();
-            }else if (name->isTuple()){
-                cout << "TODO HANDLE THIS - when lookup item is TUPLE" << endl;
-            }else if(name->isLambda()){
-                cout << "TODO HANDLE THIS - when lookup item is lambda" << endl;
-            }else{
-                compareWith = name->type;
-            }*/
             if(x->type.compare(name->type)==0){
                 Term* res = val;
                 res->type = val->type;
@@ -2007,15 +1994,12 @@ Term* CSEMachine::getValueFromEnv(Term* name) {
     string pfunc = name->getPrimitiveFunc();
     Term* f = new Term();
     f->type = "<FN:" + pfunc + ">";
-    //cout << "Found Primitive Function: " + f->type << endl;
     return f;
-    //cout << "Error: getValueFromEnv() failed - not able to find value for given Name in any Env" << endl;
-    return NULL;
 }
 
 void CSEMachine::addDeltaToControl(Delta * delta) {
     if(delta == NULL){
-        cout << "ERR in addDeltaToControl() - delta is NULL" << endl;
+        if(debug) cout << "ERR in addDeltaToControl() - delta is NULL" << endl;
         return;
     }
     for(int i=0; i<delta->terms->size(); i++){
@@ -2087,7 +2071,7 @@ Term* CSEMachine::lookup(Term* ctrl_term) {
     if(ctrl_term->isIdentifier() || ctrl_term->isTuple() || ctrl_term->isLambda()){
         return getValueFromEnv(ctrl_term);
     }else{
-        cout << "ERROR: Term is not NAME - cannot do lookup" << endl;
+        if(debug) cout << "ERROR: Term is not NAME - cannot do lookup" << endl;
         return NULL;
     }
 }
@@ -2160,7 +2144,7 @@ void CSEMachine::rule4(){
     bool boundedToTuple = false;
     if(varsize > 1 && top->isTuple()){ //TODO check - Assuming lambda bounded vars is equal to the next tuple size
         if(top->tuple_children.size()!=varsize){
-            cout << "in rule4() -- Wrong Assumption that lambda bounded vars = next tuple size" << endl;
+            if(debug) cout << "in rule4() -- Wrong Assumption that lambda bounded vars = next tuple size" << endl;
             return;
         }
         for(int i=0; i<varsize; i++){
@@ -2335,6 +2319,7 @@ int main(int argc, char* argv[]) {
 
     if(argc == 2) {
         inputfile = argv[1];
+        output = true;
     }else if(argc == 3){
         inputfile = argv[2];
         if(((string) argv[1]).compare("-ast")==0)
@@ -2353,314 +2338,17 @@ int main(int argc, char* argv[]) {
         parser.preorderTraversal(parser.top(), 0);
 
     parser.standardize_AST(parser.top());
+
     if(printST)
         parser.preorderTraversal(parser.top(), 0);
-
-
-    //ControlStructure controlStructure;
-    //Delta* delta = new Delta();
-    //unordered_map<int, Delta*> delta_map;
-    //delta_map.insert(std::make_pair(0, delta));
-    //controlStructure.generate(parser.top(), delta, delta_map, 0, 1);
-
-
-    /**
-     * Test control structures
-     */
-
-    //test1 -> lec 12 , slide 15
-
-    /*
-     * TEST - simple lambda, gamma
-     *
-     *
-    TreeNode* root = new TreeNode();
-    root->val = "gamma";
-
-    TreeNode* leftlam1 = new TreeNode();
-    leftlam1->val = "lambda";
-
-    TreeNode* rightgam1 = new TreeNode();
-    rightgam1->val = "gamma";
-
-    root->left = leftlam1;
-    leftlam1->right = rightgam1;
-
-    TreeNode* x2 = new TreeNode();
-    x2->val = "x";
-
-    leftlam1->left = x2;
-
-    TreeNode* leftgam2 = new TreeNode();
-    leftgam2->val = "gamma";
-    x2->right = leftgam2;
-
-    TreeNode* rightleft2 = new TreeNode();
-    rightleft2->val = "lambda";
-
-    TreeNode* rightright2 = new TreeNode();
-    rightright2->val = "7";
-
-    rightgam1->left = rightleft2;
-    rightleft2->right = rightright2;
-
-    TreeNode* znode = new TreeNode();
-    znode->val = "z";
-
-    TreeNode* zgmma = new TreeNode();
-    zgmma->val = "gamma";
-
-    rightleft2->left = znode;
-    znode->right = zgmma;
-
-    TreeNode* startgamma = new TreeNode();
-    startgamma->val = "gamma";
-
-    TreeNode* zz = new TreeNode();
-    zz->val = "z";
-
-    startgamma->right = zz;
-
-    zgmma->left = startgamma;
-
-    TreeNode* star = new TreeNode();
-    star->val = "*";
-
-    startgamma->left = star;
-
-    TreeNode* two = new TreeNode();
-    two->val = "2";
-
-    star->right = two;
-    */
-
-    /**
-     *  TEST - lambda with comma (x, y, z)
-     */
-
-    /*TreeNode* root = new TreeNode();
-    root->val = "gamma";
-
-    TreeNode* lam = new TreeNode();
-    lam->val = "lambda";
-
-    root->left = lam;
-
-    TreeNode* two = new TreeNode();
-    two->val = "2";
-
-    lam->right = two;
-
-    TreeNode* comma = new TreeNode();
-    comma->val = ",";
-
-    lam->left = comma;
-
-    TreeNode* plus = new TreeNode();
-    plus->val = "+";
-
-    comma->right = plus;
-
-    TreeNode* lamx = new TreeNode();
-    lamx->val = "x";
-
-    comma->left = lamx;
-
-    TreeNode* lamy = new TreeNode();
-    lamy->val = "y";
-
-    lamx->right = lamy;
-
-    TreeNode* lamz = new TreeNode();
-    lamz->val = "z";
-
-    lamy->right = lamz;
-
-    TreeNode* x = new TreeNode();
-    x->val = "x";
-
-    plus->left = x;
-
-    TreeNode* star = new TreeNode();
-    star->val = "*";
-
-    x->right = star;
-
-    TreeNode* y = new TreeNode();
-    y->val = "y";
-
-    star->left = y;
-
-    TreeNode* z = new TreeNode();
-    z->val = "z";
-
-    y->right = z;
-    */
-
-    //TEST cond
-    /*
-    TreeNode* cond = new TreeNode();
-    cond->val = "->";
-
-    TreeNode* gr = new TreeNode();
-    gr->val = "gr";
-
-    cond->left = gr;
-
-    TreeNode* print = new TreeNode();
-    print->val = "PRINT";
-
-    gr->right = print;
-
-    TreeNode* pplus = new TreeNode();
-    pplus->val = "+";
-
-    print->right = pplus;
-
-    TreeNode* five = new TreeNode();
-    five->val = "5";
-
-    gr->left = five;
-
-    TreeNode* seven = new TreeNode();
-    seven->val ="7";
-
-    five->right = seven;
-
-    TreeNode* me = new TreeNode();
-    me->val = "me";
-
-    print->left = me;
-
-    TreeNode* xx = new TreeNode();
-    xx->val ="x";
-
-    pplus->left =xx;
-
-    TreeNode* twotwo = new TreeNode();
-    twotwo->val = "2";
-
-    xx->right = twotwo;
-     */
-
-    // TEST - tau
-    /*
-    TreeNode* tau1 = new TreeNode();
-    tau1->val = "tau";
-
-    TreeNode* one = new TreeNode();
-    one->val = "1";
-
-    tau1->left = one;
-
-    TreeNode* tau2 = new TreeNode();
-    tau2->val = "tau";
-
-    one->right = tau2;
-
-    TreeNode* two = new TreeNode();
-    two->val = "2";
-
-    tau2->right = two;
-
-    TreeNode* seven = new TreeNode();
-    seven->val = "7";
-
-    tau2->left = seven;
-
-    TreeNode* eight = new TreeNode();
-    eight->val = "8";
-
-    seven->right = eight;
-     */
-
-
-    /**
-     *
-     *  TEST control structures and develop CSE machine with examples and rules
-     *  Example 1: (lambdax. x - 1)4 * 2 = 6
-     */
-
-    /*TreeNode* ex1 = new TreeNode();
-    ex1->val = "gamma";
-    TreeNode* g2 = new TreeNode();
-    g2->val = "gamma";
-    ex1->left = g2;*/
-
-    TreeNode* two = new TreeNode();
-    two->val = "2";
-    //g2->right = two;
-
-    TreeNode* star = new TreeNode();
-    star->val = "*";
-    //g2->left = star;
-    TreeNode* g3 = new TreeNode();
-    g3->val = "gamma";
-
-    star->left = g3;
-    g3->right = two;
-
-    //star->right = g3;
-
-    TreeNode* lam1 = new TreeNode();
-    lam1->val = "lambda";
-    TreeNode* four = new TreeNode();
-    four->val = "4";
-    g3->left = lam1;
-    lam1->right = four;
-
-    TreeNode* x = new TreeNode();
-    x->val = "x";
-    //TreeNode* g4 = new TreeNode();
-    //g4->val = "gamma";
-    lam1->left = x;
-    //x->right = minus;
-
-    //TreeNode* g5 = new TreeNode();
-    //g5->val = "gamma";
-    TreeNode* one = new TreeNode();
-    one->val = "1";
-    //g4->left = g5;
-    //g5->right = one;
-
-    TreeNode* minus = new TreeNode();
-    minus->val = "-";
-    TreeNode* xx = new TreeNode();
-    xx->val = "x";
-    //g5->left = minus;
-    //minus->right = xx;
-
-    x->right = minus;
-    minus->left = xx;
-    xx->right = one;
-
-    /*ControlStructure* controlStructure = new ControlStructure();
-    controlStructure->generate(star);
-
-    bool printControlStructures = true;
-    if(printControlStructures){
-        cout << "Control Structures: " << endl;
-        controlStructure->print();
-    }*/
-
-
 
     // working code!!
     ControlStructure* controlStructure = new ControlStructure();
     controlStructure->generate(parser.top());
 
-    bool printControlStructures = true;
-    if(printControlStructures){
-        cout << "Control Structures: " << endl;
-        controlStructure->print();
-    }
-
     CSEMachine* cseMachine = new CSEMachine(controlStructure);
     cseMachine->initialstate();
-    //cseMachine->printState();
     cseMachine->execute();
-
-
 
     return 0;
 }
